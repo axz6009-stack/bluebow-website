@@ -272,10 +272,148 @@ footer{text-align:center;position:relative;z-index:1}
 
 <section class="glass card" id="reviews" data-focus>
   <h2>Reviews & Feedback</h2>
-  <p class="muted">Your experience matters. The shared review database can be connected to Cloudflare D1 after the visual layer is approved.</p>
-  <div class="btns"><button class="btn" id="reviewBtn">Leave a Review <i class="fa-regular fa-star"></i></button></div>
-  <div id="reviewStatus" class="muted" style="font-size:12px;margin-top:13px"></div>
+
+  <p class="muted">
+    Your experience matters. Share your thoughts with the BlueBow community.
+  </p>
+
+  <div class="btns">
+    <button class="btn" id="reviewBtn">
+      Leave a Review <i class="fa-regular fa-star"></i>
+    </button>
+  </div>
+
+  <div
+    id="reviewStatus"
+    class="muted"
+    style="font-size:12px;margin-top:13px"
+  >
+    Loading reviews...
+  </div>
+
+  <div id="reviewList" style="margin-top:16px"></div>
 </section>
+
+
+<!-- REVIEW MODAL -->
+
+<div class="modal" id="reviewModal">
+
+  <button class="close" id="closeReview" aria-label="Close review">
+    ×
+  </button>
+
+  <div
+    class="glass"
+    style="
+      width:min(520px,100%);
+      padding:28px;
+      max-height:90vh;
+      overflow-y:auto;
+    "
+  >
+
+    <h2 style="font:600 30px 'Playfair Display',serif;margin:0 0 8px">
+      Share Your Experience
+    </h2>
+
+    <p class="muted" style="font-size:13px">
+      Tell us how your BlueBow experience was.
+    </p>
+
+    <form id="reviewForm">
+
+      <input
+        id="reviewName"
+        type="text"
+        placeholder="Your name"
+        maxlength="50"
+        required
+        style="
+          width:100%;
+          padding:13px 15px;
+          margin:12px 0;
+          border-radius:15px;
+          border:1px solid rgba(255,255,255,.22);
+          background:rgba(255,255,255,.07);
+          color:white;
+          outline:none;
+        "
+      >
+
+      <div
+        style="
+          text-align:center;
+          color:var(--muted);
+          font-size:12px;
+          margin:15px 0 8px;
+        "
+      >
+        Your rating
+      </div>
+
+      <div
+        id="starRating"
+        style="
+          display:flex;
+          justify-content:center;
+          gap:5px;
+        "
+      >
+
+        <button type="button" class="rating-star" data-rating="1">★</button>
+        <button type="button" class="rating-star" data-rating="2">★</button>
+        <button type="button" class="rating-star" data-rating="3">★</button>
+        <button type="button" class="rating-star" data-rating="4">★</button>
+        <button type="button" class="rating-star" data-rating="5">★</button>
+
+      </div>
+
+      <textarea
+        id="reviewText"
+        placeholder="Write your review..."
+        maxlength="500"
+        rows="5"
+        required
+        style="
+          width:100%;
+          padding:13px 15px;
+          margin:15px 0 8px;
+          border-radius:15px;
+          border:1px solid rgba(255,255,255,.22);
+          background:rgba(255,255,255,.07);
+          color:white;
+          outline:none;
+          resize:vertical;
+        "
+      ></textarea>
+
+      <button
+        type="submit"
+        class="btn"
+        id="submitReview"
+        style="width:100%;margin-top:8px"
+      >
+        Submit Review
+        <i class="fa-regular fa-paper-plane"></i>
+      </button>
+
+      <div
+        id="formStatus"
+        class="muted"
+        style="
+          text-align:center;
+          font-size:12px;
+          margin-top:10px;
+          min-height:18px;
+        "
+      ></div>
+
+    </form>
+
+  </div>
+
+</div>
 
 <section class="glass card" id="contact" data-focus>
   <h2>Contact & Order</h2>
@@ -390,32 +528,288 @@ document.getElementById('closeMenu').onclick=()=>modal.classList.remove('open');
 modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
 
 /* Reviews — Cloudflare D1 */
-const reviewBtn = document.getElementById('reviewBtn');
-const reviewStatus = document.getElementById('reviewStatus');
 
-reviewBtn.onclick = async () => {
+const reviewBtn = document.getElementById('reviewBtn');
+const reviewModal = document.getElementById('reviewModal');
+const closeReview = document.getElementById('closeReview');
+
+const reviewForm = document.getElementById('reviewForm');
+const reviewName = document.getElementById('reviewName');
+const reviewText = document.getElementById('reviewText');
+
+const reviewStatus = document.getElementById('reviewStatus');
+const reviewList = document.getElementById('reviewList');
+const formStatus = document.getElementById('formStatus');
+const submitReview = document.getElementById('submitReview');
+
+const ratingStars = [
+  ...document.querySelectorAll('.rating-star')
+];
+
+let selectedRating = 0;
+
+
+/* OPEN REVIEW */
+
+reviewBtn.onclick = () => {
+  reviewModal.classList.add('open');
+};
+
+
+/* CLOSE REVIEW */
+
+closeReview.onclick = () => {
+  reviewModal.classList.remove('open');
+};
+
+reviewModal.addEventListener('click', e => {
+  if (e.target === reviewModal) {
+    reviewModal.classList.remove('open');
+  }
+});
+
+
+/* STAR RATING */
+
+function updateStars() {
+
+  ratingStars.forEach(star => {
+
+    const rating = Number(star.dataset.rating);
+
+    star.style.color =
+      rating <= selectedRating
+        ? '#72fff1'
+        : 'rgba(255,255,255,.28)';
+
+  });
+
+}
+
+ratingStars.forEach(star => {
+
+  star.style.border = '0';
+  star.style.background = 'transparent';
+  star.style.fontSize = '30px';
+  star.style.cursor = 'pointer';
+  star.style.padding = '3px';
+
+  star.addEventListener('click', () => {
+
+    selectedRating =
+      Number(star.dataset.rating);
+
+    updateStars();
+
+  });
+
+});
+
+
+/* PROTECT REVIEW TEXT */
+
+function escapeHtml(value) {
+
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+
+}
+
+
+/* LOAD REVIEWS */
+
+async function loadReviews() {
+
   reviewStatus.textContent = 'Loading reviews...';
 
   try {
-    const response = await fetch('/api/reviews');
-    const reviews = await response.json();
+
+    const response =
+      await fetch('/api/reviews');
+
+    if (!response.ok) {
+      throw new Error('Could not load reviews');
+    }
+
+    const reviews =
+      await response.json();
+
+    reviewList.innerHTML = '';
 
     if (!reviews.length) {
-      reviewStatus.textContent = 'No reviews yet. Be the first to share your experience!';
+
+      reviewStatus.textContent =
+        'No reviews yet. Be the first to share your experience!';
+
       return;
     }
 
-    reviewStatus.innerHTML = reviews.map(r => `
-      <div class="review-item">
-        <strong>${r.name}</strong>
-        <span>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
-        <p>${r.review}</p>
-      </div>
-    `).join('');
+    reviewStatus.textContent =
+      `${reviews.length} review${reviews.length === 1 ? '' : 's'} from the BlueBow community.`;
+
+    reviews.forEach(r => {
+
+      const item =
+        document.createElement('div');
+
+      item.style.cssText = `
+        padding:15px;
+        margin-top:10px;
+        border:1px solid rgba(255,255,255,.14);
+        border-radius:18px;
+        background:rgba(255,255,255,.035);
+      `;
+
+      const rating =
+        Math.max(1, Math.min(5, Number(r.rating) || 1));
+
+      item.innerHTML = `
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          gap:10px;
+          align-items:center;
+        ">
+          <strong style="font-size:13px">
+            ${escapeHtml(r.name)}
+          </strong>
+
+          <span style="
+            color:#72fff1;
+            font-size:12px;
+          ">
+            ${'★'.repeat(rating)}${'☆'.repeat(5-rating)}
+          </span>
+        </div>
+
+        <p style="
+          color:var(--muted);
+          font-size:13px;
+          line-height:1.6;
+          margin:7px 0 0;
+        ">
+          ${escapeHtml(r.review)}
+        </p>
+      `;
+
+      reviewList.appendChild(item);
+
+    });
+
   } catch (error) {
-    reviewStatus.textContent = 'Unable to load reviews right now.';
+
+    console.error(error);
+
+    reviewStatus.textContent =
+      'Unable to load reviews right now.';
+
   }
-};
+
+}
+
+
+/* SUBMIT REVIEW */
+
+reviewForm.addEventListener('submit', async e => {
+
+  e.preventDefault();
+
+  const name =
+    reviewName.value.trim();
+
+  const review =
+    reviewText.value.trim();
+
+  if (!name) {
+    formStatus.textContent =
+      'Please enter your name.';
+    return;
+  }
+
+  if (selectedRating < 1) {
+    formStatus.textContent =
+      'Please choose a star rating.';
+    return;
+  }
+
+  if (!review) {
+    formStatus.textContent =
+      'Please write a review.';
+    return;
+  }
+
+  submitReview.disabled = true;
+
+  formStatus.textContent =
+    'Submitting your review...';
+
+  try {
+
+    const response =
+      await fetch('/api/reviews', {
+
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          name: name,
+          rating: selectedRating,
+          review: review
+        })
+
+      });
+
+    const result =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || 'Could not save review'
+      );
+    }
+
+    formStatus.textContent =
+      'Review submitted successfully! ❤️';
+
+    reviewForm.reset();
+
+    selectedRating = 0;
+
+    updateStars();
+
+    await loadReviews();
+
+    setTimeout(() => {
+      reviewModal.classList.remove('open');
+      formStatus.textContent = '';
+    }, 900);
+
+  } catch (error) {
+
+    console.error(error);
+
+    formStatus.textContent =
+      'Could not save your review. Please try again.';
+
+  } finally {
+
+    submitReview.disabled = false;
+
+  }
+
+});
+
+
+/* LOAD REVIEWS WHEN PAGE OPENS */
+
+loadReviews();
 </script>
 </body>
 </html> 
