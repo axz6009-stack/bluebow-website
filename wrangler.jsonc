@@ -6,5 +6,12 @@
   "assets": {
     "directory": ".",
     "binding": "ASSETS"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bluebow-review",
+      "database_id": "3ae1a2c2-f447-4198-86bb-4bec9759a08b"
+    }
+  ]
 }
