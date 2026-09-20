@@ -389,9 +389,32 @@ document.getElementById('menuBtn').onclick=()=>modal.classList.add('open');
 document.getElementById('closeMenu').onclick=()=>modal.classList.remove('open');
 modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.remove('open')});
 
-/* Review placeholder until D1 is connected */
-document.getElementById('reviewBtn').onclick=()=>{
-  document.getElementById('reviewStatus').textContent='The visual review panel is ready. Shared reviews will be connected through Cloudflare D1 next.';
+/* Reviews — Cloudflare D1 */
+const reviewBtn = document.getElementById('reviewBtn');
+const reviewStatus = document.getElementById('reviewStatus');
+
+reviewBtn.onclick = async () => {
+  reviewStatus.textContent = 'Loading reviews...';
+
+  try {
+    const response = await fetch('/api/reviews');
+    const reviews = await response.json();
+
+    if (!reviews.length) {
+      reviewStatus.textContent = 'No reviews yet. Be the first to share your experience!';
+      return;
+    }
+
+    reviewStatus.innerHTML = reviews.map(r => `
+      <div class="review-item">
+        <strong>${r.name}</strong>
+        <span>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</span>
+        <p>${r.review}</p>
+      </div>
+    `).join('');
+  } catch (error) {
+    reviewStatus.textContent = 'Unable to load reviews right now.';
+  }
 };
 </script>
 </body>
